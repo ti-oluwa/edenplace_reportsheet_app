@@ -78,7 +78,8 @@ def main():
                 if not students_results:
                     tab.info("No result data available")
                     continue
-
+                
+                tab.write(f"*{len(students_results)}* students")
                 for student_result in students_results:
                     student_name = f"**{student_result['student'].title()}**"
 

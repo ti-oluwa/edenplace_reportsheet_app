@@ -271,6 +271,7 @@ def extract_broadsheet_data(broadsheet: str):
     for worksheet in worksheets(workbook):
         worksheet = remove_empty_first_rows(worksheet)
         broadsheet_schema = get_broadsheet_schema(worksheet)
+
         results: typing.List[StudentResult] = []
         for student_result in student_results(
             worksheet, sheet_schema=broadsheet_schema
