@@ -2,7 +2,6 @@ from contextlib import contextmanager
 import typing
 import uuid
 import pandas as pd
-from django.core.files.uploadedfile import UploadedFile
 import streamlit as st
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
@@ -13,7 +12,7 @@ import utils
 st.set_page_config(
     page_title="EdenPlace Report Sheet Dashboard",
     page_icon="🏫",
-    layout="wide",  # Layout can be 'centered' or 'wide'
+    layout="wide",
 )
 
 

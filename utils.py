@@ -1,7 +1,6 @@
 from pathlib import Path
 import itertools
 import typing
-import rich
 import openpyxl
 from openpyxl.worksheet.worksheet import Worksheet
 
