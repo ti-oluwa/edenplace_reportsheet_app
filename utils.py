@@ -1,3 +1,4 @@
+import enum
 from pathlib import Path
 import itertools
 import typing
@@ -63,7 +64,7 @@ EXTERNAL_TO_INTERNAL_MAPPING = {
     "3rd term": "3rd term total",
     "cumtotal": "cumulative (session) total",
     "av. total": "average total",
-    "av. %": "average %"
+    "av. %": "average %",
 }
 
 
@@ -155,10 +156,39 @@ def students(worksheet: Worksheet):
 Value = typing.Optional[typing.Union[int, float]]
 
 
+class Grade(enum.StrEnum):
+    A = "A"
+    B = "B"
+    C = "C"
+    D = "D"
+    E = "E"
+    F = "F"
+
+
+def get_grade(score: Value) -> typing.Optional[Grade]:
+    if score is None:
+        return None
+
+    score = round(score)
+    if score >= 85:
+        return Grade.A
+    elif 70 <= score <=84:
+        return Grade.B
+    elif 55 <= score <= 69:
+        return Grade.C
+    elif 50 <= score <= 54:
+        return Grade.D
+    elif 45 <= score <= 49:
+        return Grade.E
+    else:
+        return Grade.F
+
+
 class SubjectScore(typing.TypedDict):
     mid_term_score: Value
     exam_score: Value
     total_score: Value
+    grade: Grade
 
 
 SubjectsScores = typing.Dict[str, SubjectScore]
@@ -193,6 +223,7 @@ def get_subjects_scores_for_student(
             mid_term_score=mid_term_score,
             exam_score=exam_score,
             total_score=total_score,
+            grade=get_grade(total_score),
         )
         subjects_scores[subject] = subject_score
     return subjects_scores
@@ -275,8 +306,11 @@ def extract_broadsheet_data(broadsheet: str):
         results: typing.List[StudentResult] = []
         for student_result in student_results(
             worksheet, sheet_schema=broadsheet_schema
-        ):  
+        ):
             results.append(student_result)
 
-        sheets_data[broadsheet_schema["term"]] = results
+        sheets_data[broadsheet_schema["term"]] = {
+            "students_results": results,
+            "broadsheet_schema": broadsheet_schema
+        }
     return sheets_data
