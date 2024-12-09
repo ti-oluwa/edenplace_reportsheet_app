@@ -1,5 +1,5 @@
 import string
-from utils import StudentResult, student_results
+from edenplace_broadsheet_app.sheet_utils import StudentResult, student_results
 
 st = string.Template()
 

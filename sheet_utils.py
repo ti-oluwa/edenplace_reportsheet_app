@@ -2,6 +2,7 @@ import enum
 from pathlib import Path
 import itertools
 import typing
+
 import openpyxl
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -32,6 +33,11 @@ def worksheets(workbook: openpyxl.Workbook):
         yield workbook[sheet]
 
 
+Term = typing.Type[str]
+AggregateName = typing.Type[str]
+SubjectName = typing.Type[str]
+
+
 class SchemaInfo(typing.TypedDict):
     column: int
     overall: typing.NotRequired[typing.Optional[int]]
@@ -43,10 +49,14 @@ class SubjectSchema(typing.TypedDict):
     total_score: SchemaInfo
 
 
+SubjectsSchemas = typing.Dict[SubjectName, SubjectSchema]
+AggregatesSchemas = typing.Dict[AggregateName, SchemaInfo]
+
+
 class BroadSheetSchema(typing.TypedDict):
-    term: str
-    subjects: typing.Dict[str, SubjectSchema]
-    aggregates: typing.Dict[str, SchemaInfo]
+    term: Term
+    subjects: SubjectsSchemas
+    aggregates: AggregatesSchemas
     teachers_comment: SchemaInfo
     coordinators_comment: SchemaInfo
 
@@ -172,7 +182,7 @@ def get_grade(score: Value) -> typing.Optional[Grade]:
     score = round(score)
     if score >= 85:
         return Grade.A
-    elif 70 <= score <=84:
+    elif 70 <= score <= 84:
         return Grade.B
     elif 55 <= score <= 69:
         return Grade.C
@@ -193,11 +203,12 @@ class SubjectScore(typing.TypedDict):
 
 SubjectsScores = typing.Dict[str, SubjectScore]
 AggregatesValues = typing.Dict[str, Value]
+StudentName = typing.Type[str]
 
 
 class StudentResult(typing.TypedDict):
-    term: str
-    student: str
+    term: Term
+    student: StudentName
     subjects: SubjectsScores
     aggregates: AggregatesValues
     teachers_comment: typing.Optional[str]
@@ -254,9 +265,9 @@ def get_comment_value(
 
 
 def student_results(
-    worksheet: Worksheet, sheet_schema: typing.Optional[BroadSheetSchema] = None
+    worksheet: Worksheet, broadsheet_schema: typing.Optional[BroadSheetSchema] = None
 ):
-    broadsheet_schema = sheet_schema or get_broadsheet_schema(worksheet)
+    broadsheet_schema = broadsheet_schema or get_broadsheet_schema(worksheet)
     for student in students(worksheet):
         student_row_index = student["row"]
         student_name = student["name"]
@@ -296,21 +307,30 @@ def student_results(
         yield result
 
 
-def extract_broadsheet_data(broadsheet: str):
-    workbook = load_workbook(Path(broadsheet).resolve())
-    sheets_data = {}
+class BroadSheetData(typing.TypedDict):
+    students_results: typing.List[StudentResult]
+    broadsheet_schema: BroadSheetSchema
+
+
+BroadSheetsData = typing.Dict[Term, BroadSheetData]
+
+
+def extract_broadsheets_data(file: typing.Union[str, Path]):
+    workbook = load_workbook(Path(file).resolve())
+    broadsheets_data: BroadSheetsData = {}
     for worksheet in worksheets(workbook):
         worksheet = remove_empty_first_rows(worksheet)
         broadsheet_schema = get_broadsheet_schema(worksheet)
 
         results: typing.List[StudentResult] = []
         for student_result in student_results(
-            worksheet, sheet_schema=broadsheet_schema
+            worksheet, broadsheet_schema=broadsheet_schema
         ):
             results.append(student_result)
 
-        sheets_data[broadsheet_schema["term"]] = {
-            "students_results": results,
-            "broadsheet_schema": broadsheet_schema
-        }
-    return sheets_data
+        term = broadsheet_schema["term"]
+        broadsheets_data[term] = BroadSheetData(
+            students_results=results,
+            broadsheet_schema=broadsheet_schema,
+        )
+    return broadsheets_data
