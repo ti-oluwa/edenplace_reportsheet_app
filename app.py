@@ -221,7 +221,7 @@ def render_broadsheets_data(broadsheets_data: BroadSheetsData):
 
             tab.caption(f"***{len(students_results)} students***")
             for student_result in students_results:
-                expander_label = f"**```{student_result['student']}```**"
+                expander_label = f"**{student_result['student']}**"
                 with st.expander(label=expander_label, expanded=False, icon="👨🏾‍🎓"):
                     render_student_result_summary(student_result, broadsheet_schema)
 
