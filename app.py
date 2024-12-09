@@ -115,6 +115,13 @@ def main():
                             st.table(aggregates_df)
                         else:
                             st.info("No aggregates data available.")
+                        
+                        teachers_comment = student_result["teachers_comment"]
+                        coordinators_comment = student_result["coordinators_comment"]
+                        st.write("**Teacher's comment**: ")
+                        st.caption(teachers_comment)
+                        st.write("**Coordinator's comment**: ")
+                        st.caption(coordinators_comment or "Not given")
 
                         st.button(
                             "Generate report sheet",
