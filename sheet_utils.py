@@ -1,4 +1,5 @@
 import enum
+import math
 from pathlib import Path
 import itertools
 import typing
@@ -187,7 +188,7 @@ def get_grade(score: Value) -> typing.Optional[Grade]:
     if score is None:
         return None
 
-    score = round(score)
+    score = round(score, ndigits=1)
     if score >= 85:
         return Grade.A
     elif 70 <= score <= 84:
@@ -259,7 +260,9 @@ def get_aggregates_values(
         aggregate_value = worksheet.cell(
             student_row_index, aggregate_column_index
         ).value
-        aggregates_values[aggregate] = aggregate_value
+        aggregates_values[aggregate] = (
+            round(aggregate_value, ndigits=1) if aggregate_value else None
+        )
     return aggregates_values
 
 
@@ -329,7 +332,7 @@ def extract_broadsheets_data(file: typing.Union[str, Path]):
     for worksheet in nonempty_worksheets(workbook):
         worksheet = remove_empty_first_rows(worksheet)
         broadsheet_schema = get_broadsheet_schema(worksheet)
-        
+
         results: typing.List[StudentResult] = []
         for student_result in student_results(
             worksheet, broadsheet_schema=broadsheet_schema

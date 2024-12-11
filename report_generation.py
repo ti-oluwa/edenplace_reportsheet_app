@@ -43,7 +43,7 @@ def get_default_report_generation_data(
         "aggregates_values": student_result["aggregates"],
         "teachers_comment": student_result["teachers_comment"],
         "coordinators_comment": student_result["coordinators_comment"],
-        "overall_percentage_obtained": round(overall_percentage_obtained, ndigits=2)
+        "overall_percentage_obtained": round(overall_percentage_obtained, ndigits=1)
         if overall_percentage_obtained
         else "",
         "overall_grade": get_grade(overall_percentage_obtained) or "",

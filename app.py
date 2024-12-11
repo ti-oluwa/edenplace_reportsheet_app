@@ -173,11 +173,11 @@ def render_student_result_summary(
     col1, col2 = st.columns(2, gap="large")
     with col1:
         col1.write(
-            f"**Overall Percentage Obtainable:** {round(overall_percentage_obtainable, ndigits=2) if overall_percentage_obtainable else "Cannot evaluate"}%"
+            f"**Overall Percentage Obtainable:** {round(overall_percentage_obtainable, ndigits=1) if overall_percentage_obtainable else "Cannot evaluate"}%"
         )
 
         col1.write(
-            f"**Overall Percentage Obtained:** {round(overall_percentage_obtained, ndigits=2) if overall_percentage_obtained else "Cannot evaluate"}%"
+            f"**Overall Percentage Obtained:** {round(overall_percentage_obtained, ndigits=1) if overall_percentage_obtained else "Cannot evaluate"}%"
         )
 
     with col2:
