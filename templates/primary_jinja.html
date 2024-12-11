@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EdenPlace Report Template</title>
+    <title>EdenPlace Primary Report Template</title>
 </head>
 
 <body>
@@ -382,21 +382,21 @@
 
                 <div class="term-details">
                     <div class="term-detail">
-                        <p>TERM: <b>FIRST TERM</b></p>
-                        <p>AVERAGE AGE: <b>8 YEARS</b></p>
-                        <p>NAME: <b>OKELOLA ESTHER</b></p>
+                        <p>TERM: <b>{{ term }}</b></p>
+                        <p>AVERAGE AGE: <b>{{ class_average_age or "" }} YEARS</b></p>
+                        <p>NAME: <b>{{ student_name or "" }}</b></p>
                     </div>
 
                     <div class="term-detail">
-                        <p>ENDING: <b>15TH DECEMBER 2023</b></p>
-                        <p>NO. OF DAYS SCHOOL OPEN: <b>122</b></p>
-                        <p>NO. IN CLASS: <b>12</b></p>
+                        <p>ENDING: <b>{{ term_end_date or "" }}</b></p>
+                        <p>NO. OF DAYS SCHOOL OPEN: <b>{{ number_of_days_school_opened or "" }}</b></p>
+                        <p>NO. IN CLASS: <b>{{ number_of_students_in_class or "" }}</b></p>
                     </div>
 
                     <div class="term-detail">
-                        <p>CLASS: <b>GRADE 3</b></p>
-                        <p>NO. OF DAYS PRESENT: <b>120</b></p>
-                        <p>NO. OF DAYS ABSENT: <b>2</b></p>
+                        <p>CLASS: <b>{{ class_name or "" }}</b></p>
+                        <p>NO. OF DAYS PRESENT: <b>{{ number_of_days_present or "" }}</b></p>
+                        <p>NO. OF DAYS ABSENT: <b>{{ number_of_days_absent or "" }}</b></p>
                     </div>
                 </div>
             </div>
@@ -411,133 +411,27 @@
                         <thead>
                             <tr>
                                 <th>Subjects</th>
-                                <th>Mid Term Score (40)</th>
-                                <th>Exam Score (60)</th>
-                                <th>Total Score (60)</th>
+                                {% for score_name, score_schema in scores_schemas.items() %}
+                                    {% if score_schema.overall %}
+                                        <th>{{ score_name | replace("_", " ") }} ({{ score_schema.overall }})</th>
+                                    {% else %}
+                                        <th>{{ score_name | replace("_", " ") }}</th>
+                                    {% endif %}
+                                {% endfor %}
                                 <th>Grade</th>
                             </tr>
                         </thead>
 
                         <tbody>
+                            {% for subject_name, scores in subjects_scores.items() %}
                             <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
+                                <td>{{ subject_name | replace("_", " ") }}</td>
+
+                                {% for score_value in scores.values() %}
+                                    <td>{{ score_value or "nil" }}</td>
+                                {% endfor %}
                             </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
-                            <tr>
-                                <td>Literacy</td>
-                                <td>38</td>
-                                <td>40</td>
-                                <td>70</td>
-                                <td>B</td>
-                            </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
 
@@ -551,62 +445,12 @@
                         </thead>
 
                         <tbody>
+                            {% for behavioural_trait, grade in behavioural_scores.items() %}
                             <tr>
-                                <td>Punctuality</td>
-                                <td>A</td>
+                                <td>{{ behavioural_trait | replace("_", " ") }}</td>
+                                <td>{{ grade }}</td>
                             </tr>
-                            <tr>
-                                <td>Class Attendance</td>
-                                <td>A</td>
-                            </tr>
-                            <tr>
-                                <td>Neatness</td>
-                                <td>A</td>
-                            </tr>
-                            <tr>
-                                <td>Relationship with Others</td>
-                                <td>A</td>
-                            </tr>
-                            <tr>
-                                <td>Sense of Responsibility</td>
-                                <td>A</td>
-                            </tr>
-                            <tr>
-                                <td>Obedience</td>
-                                <td>A</td>
-                            </tr>
-                            <tr>
-                                <td>Attentiveness</td>
-                                <td>A</td>
-                            </tr>
-                            <tr>
-                                <td>Reliability</td>
-                                <td>A</td>
-                            </tr>
-                            <tr>
-                                <td>Self-Control</td>
-                                <td>A</td>
-                            </tr>
-                            <tr>
-                                <td>Spirit of Cooperation</td>
-                                <td>A</td>
-                            </tr>
-                            <tr>
-                                <td>Honesty</td>
-                                <td>A</td>
-                            </tr>
-                            <tr>
-                                <td>Handling of Tools</td>
-                                <td>A</td>
-                            </tr>
-                            <tr>
-                                <td>Handwriting</td>
-                                <td>A</td>
-                            </tr>
-                            <tr>
-                                <td>Games</td>
-                                <td>A</td>
-                            </tr>
+                            {% endfor %}
 
                             <div class="grade-keys">
                                 <tr>
@@ -631,34 +475,22 @@
                     <thead>
                         <tr>
                             <th>Aggregates</th>
-                            <td>Mid Term Total (40)</td>
-                            <td>Exam Total (60)</td>
-                            <td>Sum Total (60)</td>
-                            <td>Mid Term %</td>
-                            <td>Sum Total %</td>
-
-                            <td>Mid Term Total (40)</td>
-                            <td>Exam Total (60)</td>
-                            <td>Sum Total (60)</td>
-                            <td>Mid Term %</td>
-                            <td>Sum Total %</td>
+                            {% for aggregate_name, aggregate_schema in aggregates_schemas.items() %}
+                                {% if aggregate_schema.overall %}
+                                    <td>{{ aggregate_name | replace("_", " ") }} ({{ aggregate_schema.overall }})</td>
+                                {% else %}
+                                    <td>{{ aggregate_name | replace("_", " ") }}</td>
+                                {% endif %}
+                            {% endfor %}
                         </tr>
                     </thead>
 
                     <tbody>
                         <tr>
                             <th>Values</th>
-                            <td>38</td>
-                            <td>40</td>
-                            <td>70</td>
-                            <td>12</td>
-                            <td>345</td>
-
-                            <td>38</td>
-                            <td>40</td>
-                            <td>70</td>
-                            <td>12</td>
-                            <td>345</td>
+                            {% for value in aggregates_values.values() %}
+                                <td>{{ value or "nil" }}</td>
+                            {% endfor %}
                         </tr>
                     </tbody>
                 </table>
@@ -666,18 +498,18 @@
 
             <section class="report-summary">
                 <div class="overalls">
-                    <p><b>Percentage Obtained: </b> 76.8%</p>
-                    <p><b>Overall Grade: </b> B</p>
+                    <p><b>Percentage Obtained: </b> {{ overall_percentage_obtained }}%</p>
+                    <p><b>Overall Grade: </b> {{ overall_grade }}</p>
                 </div>
                 <div class="comments">
-                    <p><b>Teacher's Comment - </b> Ara-ire is an inteligent and enthusiatic learner</p>
-                    <p><b>Coordinator's Comment - </b> Not given</p>
+                    <p><b>Teacher's Comment - </b> {{ teachers_comment or "Not given" }}</p>
+                    <p><b>Coordinator's Comment - </b> {{ coordinators_comment or "Not given" }}</p>
                 </div>
             </section>
         </section>
 
         <section class="report-footer">
-            <small>Next Term Begins: </small>
+            <small>Next Term Begins: {{ next_term_start_date or "" }}</small>
             <small>Coordinator's Signature: _________________________</small>
         </section>
     </main>

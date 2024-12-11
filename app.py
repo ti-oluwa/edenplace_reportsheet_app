@@ -20,6 +20,7 @@ from sheet_utils import (
     get_grade,
     extract_broadsheets_data,
 )
+from report_generation import render_report_generation_form
 
 
 logger = logging.getLogger("edenplace-reportsheet")
@@ -192,13 +193,16 @@ def render_student_result_summary(
     st.write("**Coordinator's comment**: ")
     st.caption(coordinators_comment or "Not given")
 
+    st.session_state.report_generation_data_submitted = False
     st.button(
-        "Generate report sheet",
+        "Generate Report Sheet",
         type="secondary",
         key=uuid.uuid4().hex,
         help=f"Generate report sheet for {student_name}",
         use_container_width=True,
-        disabled=True,
+        on_click=lambda: render_report_generation_form(
+            student_result, broadsheet_schema
+        ),
     )
 
 
@@ -255,4 +259,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    nav = st.navigation(
+        pages=[
+            st.Page(main, default=True, title="Dashboard"),
+        ]
+    )
+    nav.run()
