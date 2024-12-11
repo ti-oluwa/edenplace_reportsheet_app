@@ -28,9 +28,17 @@ def load_workbook(path: Path):
     return workbook
 
 
-def worksheets(workbook: openpyxl.Workbook):
+def nonempty_worksheets(workbook: openpyxl.Workbook):
+    """Yield non-empty worksheets from a workbook."""
     for sheet in workbook.sheetnames:
-        yield workbook[sheet]
+        worksheet = workbook[sheet]
+        if worksheet.max_row < 5 or worksheet.max_column < 3:
+            # This ensure that empty worksheets are not processed
+            # As the processing of empty worksheets will take a lot of time
+            # because of the schema extraction process will have to traverse
+            # the entire worksheet.
+            continue
+        yield worksheet
 
 
 Term = typing.Type[str]
@@ -99,7 +107,7 @@ def get_broadsheet_schema(worksheet: Worksheet):
     # the cell range in which the schema data we need to extract lies.
     # Simply put, just the 2nd and 3rd row are what we need to extract the column schema schema.
     for cols in itertools.batched(
-        worksheet.iter_cols(min_col=3, min_row=1, max_row=3), n=3
+        worksheet.iter_cols(min_col=3, max_col=300, min_row=2, max_row=4), n=3
     ):
         previous_title = None
         for col in cols:
@@ -153,7 +161,7 @@ class StudentInfo(typing.TypedDict):
 
 
 def students(worksheet: Worksheet):
-    for row in worksheet.iter_rows(min_row=4, min_col=2, max_col=2):
+    for row in worksheet.iter_rows(min_row=5, min_col=2, max_col=2):
         name = row[0].value
         if not name:
             continue
@@ -318,10 +326,10 @@ BroadSheetsData = typing.Dict[Term, BroadSheetData]
 def extract_broadsheets_data(file: typing.Union[str, Path]):
     workbook = load_workbook(Path(file).resolve())
     broadsheets_data: BroadSheetsData = {}
-    for worksheet in worksheets(workbook):
+    for worksheet in nonempty_worksheets(workbook):
         worksheet = remove_empty_first_rows(worksheet)
         broadsheet_schema = get_broadsheet_schema(worksheet)
-
+        
         results: typing.List[StudentResult] = []
         for student_result in student_results(
             worksheet, broadsheet_schema=broadsheet_schema
