@@ -9,6 +9,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 
 def remove_empty_first_rows(worksheet: Worksheet):
+    """Remove empty rows from the beginning of the worksheet."""
     row_idx = 1
     # Loop until the first non-empty row is found
     while row_idx <= worksheet.max_row:
@@ -25,6 +26,7 @@ def remove_empty_first_rows(worksheet: Worksheet):
 
 
 def load_workbook(path: Path):
+    """Load an Excel workbook from a file path."""
     workbook = openpyxl.load_workbook(path, data_only=True)
     return workbook
 
@@ -43,26 +45,37 @@ def nonempty_worksheets(workbook: openpyxl.Workbook):
 
 
 Term = typing.Type[str]
+"""Type alias for a school term name."""
 AggregateName = typing.Type[str]
+"""Type alias for an result aggregate name."""
 SubjectName = typing.Type[str]
+"""Type alias for a subject name."""
 
 
 class SchemaInfo(typing.TypedDict):
+    """Schema information for a column in a worksheet."""
+
     column: int
     overall: typing.NotRequired[typing.Optional[int]]
 
 
 class SubjectSchema(typing.TypedDict):
+    """Schema information for a subject in a worksheet."""
+
     mid_term_score: SchemaInfo
     exam_score: SchemaInfo
     total_score: SchemaInfo
 
 
 SubjectsSchemas = typing.Dict[SubjectName, SubjectSchema]
+"""Type alias for a collection or mapping of subject schemas."""
 AggregatesSchemas = typing.Dict[AggregateName, SchemaInfo]
+"""Type alias for a collection or mapping of aggregate schemas."""
 
 
 class BroadSheetSchema(typing.TypedDict):
+    """Schema information for a broadsheet worksheet."""
+
     term: Term
     subjects: SubjectsSchemas
     aggregates: AggregatesSchemas
@@ -85,14 +98,22 @@ EXTERNAL_TO_INTERNAL_MAPPING = {
     "av. total": "average total",
     "av. %": "average %",
 }
+"""Mapping of all possible (external) column names - from the broadsheet, 
+to internal names - to be used in the code, and report generation."""
 
 
 def _to_internal(val: str) -> str:
+    """Convert an external column name to an internal column name."""
     val = val.strip().lower()
     return EXTERNAL_TO_INTERNAL_MAPPING.get(val, val)
 
 
 def get_broadsheet_schema(worksheet: Worksheet):
+    """
+    Extract the schema information from a broadsheet worksheet.
+
+    :param worksheet: The worksheet/broadsheet whose schema is to be extracted.
+    """
     # Use typed dict for detailed typing and dictionary data access
     schema = BroadSheetSchema(
         term=worksheet.title.strip().title(),
@@ -157,11 +178,14 @@ def get_broadsheet_schema(worksheet: Worksheet):
 
 
 class StudentInfo(typing.TypedDict):
+    """Information about a student in a worksheet."""
+
     name: str
     row: int
 
 
 def students(worksheet: Worksheet):
+    """Yield student information from a worksheet/broadsheet."""
     for row in worksheet.iter_rows(min_row=5, min_col=2, max_col=2):
         name = row[0].value
         if not name:
@@ -173,9 +197,12 @@ def students(worksheet: Worksheet):
 
 
 Value = typing.Optional[typing.Union[int, float]]
+"""Type alias for a score value which can be an integer or a float."""
 
 
 class Grade(enum.StrEnum):
+    """Enumeration of possible grades for a subjects overall score."""
+
     A = "A"
     B = "B"
     C = "C"
@@ -185,6 +212,7 @@ class Grade(enum.StrEnum):
 
 
 def get_grade(score: Value) -> typing.Optional[Grade]:
+    """Deduce the grade from an overall score."""
     if score is None:
         return None
 
@@ -204,6 +232,8 @@ def get_grade(score: Value) -> typing.Optional[Grade]:
 
 
 class SubjectScore(typing.TypedDict):
+    """Scores for each term section for a subject."""
+
     mid_term_score: Value
     exam_score: Value
     total_score: Value
@@ -211,11 +241,16 @@ class SubjectScore(typing.TypedDict):
 
 
 SubjectsScores = typing.Dict[str, SubjectScore]
+"""Type alias for a collection or mapping of subject scores."""
 AggregatesValues = typing.Dict[str, Value]
+"""Type alias for a collection or mapping of aggregate values."""
 StudentName = typing.Type[str]
+"""Type alias for a student's name."""
 
 
 class StudentResult(typing.TypedDict):
+    """Result information for a student in a worksheet."""
+
     term: Term
     student: StudentName
     subjects: SubjectsScores
@@ -229,6 +264,16 @@ def get_subjects_scores_for_student(
     student_row_index: int,
     subjects_schemas: typing.Dict[str, SubjectSchema],
 ):
+    """
+    Extract and return the subjects scores for a student in a worksheet.
+
+    :param worksheet: The worksheet/broadsheet containing the student's scores.
+    :param student_row_index: The index of the row containing the student's info
+        in the worksheet/broadsheet.
+    :param subjects_schemas: The schema information for the subjects in the
+        worksheet/broadsheet to be used to extract the scores.
+    :return: The subjects scores for the student.
+    """
     subjects_scores: SubjectsScores = {}
     for subject, subject_schema in subjects_schemas.items():
         mid_term_score_column_index = subject_schema["mid_term_score"]["column"]
@@ -254,6 +299,16 @@ def get_aggregates_values(
     student_row_index: int,
     aggregates_schemas: typing.Dict[str, SchemaInfo],
 ):
+    """
+    Extract and return the aggregate values for a student in a worksheet.
+
+    :param worksheet: The worksheet/broadsheet containing the student's scores.
+    :param student_row_index: The index of the row containing the student's info
+        in the worksheet/broadsheet.
+    :param aggregates_schemas: The schema information for the aggregates in the
+        worksheet/broadsheet to be used to extract the values.
+    :return: The aggregate values for the student.
+    """
     aggregates_values: AggregatesValues = {}
     for aggregate, aggregate_schema in aggregates_schemas.items():
         aggregate_column_index = aggregate_schema["column"]
@@ -269,6 +324,16 @@ def get_aggregates_values(
 def get_comment_value(
     worksheet: Worksheet, student_row_index: int, comment_column_index: int
 ):
+    """
+    Extract and return the comment value for a student in a worksheet.
+
+    :param worksheet: The worksheet/broadsheet containing the student's scores.
+    :param student_row_index: The index of the row containing the student's info
+        in the worksheet/broadsheet.
+    :param comment_column_index: The index of the column containing the comment
+        in the worksheet/broadsheet.
+    :return: The comment value for the student.
+    """
     comment = worksheet.cell(student_row_index, comment_column_index).value
     if not comment:
         return None
@@ -278,6 +343,14 @@ def get_comment_value(
 def student_results(
     worksheet: Worksheet, broadsheet_schema: typing.Optional[BroadSheetSchema] = None
 ):
+    """
+    Extract and yield the results for each student in a worksheet.
+
+    :param worksheet: The worksheet/broadsheet containing the students' scores.
+    :param broadsheet_schema: The schema information for the worksheet/broadsheet.
+        to be used to extract the results.
+    :return: The results for each student in the worksheet/broadsheet.
+    """
     broadsheet_schema = broadsheet_schema or get_broadsheet_schema(worksheet)
     for student in students(worksheet):
         student_row_index = student["row"]
@@ -319,14 +392,23 @@ def student_results(
 
 
 class BroadSheetData(typing.TypedDict):
+    """Data extracted from a broadsheet/worksheet."""
+
     students_results: typing.List[StudentResult]
     broadsheet_schema: BroadSheetSchema
 
 
 BroadSheetsData = typing.Dict[Term, BroadSheetData]
+"""Type alias for a collection or mapping of broadsheet data."""
 
 
 def extract_broadsheets_data(file: typing.Union[str, Path]):
+    """
+    Extract and return the data from a file containing broadsheets (excel workbook).
+
+    :param file: The path to the file containing the broadsheets.
+    :return: The data extracted from the broadsheets.
+    """
     workbook = load_workbook(Path(file).resolve())
     broadsheets_data: BroadSheetsData = {}
     for worksheet in nonempty_worksheets(workbook):

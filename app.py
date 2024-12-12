@@ -32,6 +32,14 @@ st.set_page_config(
 
 @contextmanager
 def get_temporary_path(uploaded_file: UploadedFile):
+    """
+    Context manager to write uploaded file to a temporary file.
+    Returns the path to the temporary file.
+    The path remains valid only within the context manager.
+
+    :param uploaded_file (UploadedFile): The uploaded file to write to a temporary file.
+    :return: Path to the temporary file.
+    """
     with tempfile.TemporaryDirectory(dir=Path.cwd()) as temp_dir:
         temp_file_path = Path(temp_dir).resolve() / str(uploaded_file.name)
 
@@ -41,6 +49,12 @@ def get_temporary_path(uploaded_file: UploadedFile):
 
 
 def extract_broadsheets_file_data(broadsheets_file: UploadedFile):
+    """
+    Extracts broadsheets data from an uploaded file.
+
+    :param broadsheets_file (UploadedFile): The uploaded file containing broadsheets data.
+    :return: Extracted broadsheets data.
+    """
     with get_temporary_path(broadsheets_file) as temp_path:
         broadsheets_data = extract_broadsheets_data(temp_path)
     return broadsheets_data
@@ -96,6 +110,14 @@ def format_columns(columns):
 def subjects_scores_to_dataframe(
     subjects_scores: SubjectsScores, subjects_schemas: SubjectsSchemas
 ):
+    """
+    Converts subjects scores to a pandas dataframe.
+    Applying relevant formatting to the column headings
+
+    :param subjects_scores (SubjectsScores): The subjects scores to convert to a dataframe.
+    :param subjects_schemas (SubjectsSchemas): The subjects schemas to use for formatting the column headings.
+    :return: The subjects scores as a pandas dataframe.
+    """
     subjects_scores_df = pd.DataFrame(subjects_scores)
     # The column headings in the dataframe are the subject names
     # Pick any one the subject names (column headings)
@@ -122,6 +144,14 @@ def subjects_scores_to_dataframe(
 def aggregates_values_to_dataframe(
     aggregates_values: AggregatesValues, aggregates_schemas: AggregatesSchemas
 ):
+    """
+    Converts aggregates values to a pandas dataframe.
+    Applying relevant formatting to the column headings
+
+    :param aggregates_values (AggregatesValues): The aggregates values to convert to a dataframe.
+    :param aggregates_schemas (AggregatesSchemas): The aggregates schemas to use for formatting the column headings.
+    :return: The aggregates values as a pandas dataframe.
+    """
     aggregates_values_df = pd.DataFrame([aggregates_values])
     aggregates_values_df.columns = add_overall_obtainable_value_to_aggregates_columns(
         columns=aggregates_values_df.columns,
@@ -135,6 +165,12 @@ def aggregates_values_to_dataframe(
 def render_student_result_summary(
     student_result: StudentResult, broadsheet_schema: BroadSheetSchema
 ):
+    """
+    Renders a summary of a student's result in the app.
+
+    :param student_result (StudentResult): The student's result to render.
+    :param broadsheet_schema (BroadSheetSchema): The schema of the broadsheet containing the student's result.
+    """
     subjects_scores = student_result["subjects"]
     aggregates_values = student_result["aggregates"]
     student_name = student_result["student"]
@@ -207,6 +243,11 @@ def render_student_result_summary(
 
 
 def render_broadsheets_data(broadsheets_data: BroadSheetsData):
+    """
+    Renders broadsheets data on the app.
+
+    :param broadsheets_data (BroadSheetsData): The broadsheets data to render.
+    """
     # The term/sheet names which are the keys in the broadsheet data will be used as tab names
     tab_names = list(broadsheets_data.keys())
     tabs = st.tabs(tab_names)
@@ -231,6 +272,11 @@ def render_broadsheets_data(broadsheets_data: BroadSheetsData):
 
 
 def main():
+    """
+    Main entry point for the app.
+
+    Renders the main dashboard of the app.
+    """
     st.header("EdenPlace Term Report Sheets Dashboard")
     st.text("Visualize and generate student term report sheets")
     st.caption(

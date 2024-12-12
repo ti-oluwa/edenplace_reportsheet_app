@@ -28,31 +28,6 @@ PRIMARY_REPORT_TEMPLATE_VARIABLES = get_template_variables(
 )
 
 
-def get_default_report_generation_data(
-    student_result: StudentResult, broadsheet_schema: BroadSheetSchema
-):
-    subjects_schemas = broadsheet_schema["subjects"]
-    first_subject = list(subjects_schemas.keys())[0]
-    scores_schemas = subjects_schemas[first_subject]
-    overall_percentage_obtained = student_result["aggregates"]["sum total %"]
-
-    report_generation_data = {
-        "term": student_result["term"] or "",
-        "student_name": student_result["student"],
-        "subjects_scores": student_result["subjects"],
-        "aggregates_values": student_result["aggregates"],
-        "teachers_comment": student_result["teachers_comment"],
-        "coordinators_comment": student_result["coordinators_comment"],
-        "overall_percentage_obtained": round(overall_percentage_obtained, ndigits=1)
-        if overall_percentage_obtained
-        else "",
-        "overall_grade": get_grade(overall_percentage_obtained) or "",
-        "aggregates_schemas": broadsheet_schema["aggregates"],
-        "scores_schemas": scores_schemas,
-    }
-    return report_generation_data
-
-
 TEXT_TYPE_VARIABLES = {
     "class_name",
     "teachers_comment",
@@ -95,19 +70,50 @@ BEHAVIOURAL_TRAITS = {
 }
 
 
+@st.cache_data
+def get_default_report_generation_data(
+    student_result: StudentResult, broadsheet_schema: BroadSheetSchema
+):
+    subjects_schemas = broadsheet_schema["subjects"]
+    first_subject = list(subjects_schemas.keys())[0]
+    scores_schemas = subjects_schemas[first_subject]
+    overall_percentage_obtained = student_result["aggregates"]["sum total %"]
+
+    report_generation_data = {
+        "term": student_result["term"] or "",
+        "student_name": student_result["student"],
+        "subjects_scores": student_result["subjects"],
+        "aggregates_values": student_result["aggregates"],
+        "teachers_comment": student_result["teachers_comment"],
+        "coordinators_comment": student_result["coordinators_comment"],
+        "overall_percentage_obtained": round(overall_percentage_obtained, ndigits=1)
+        if overall_percentage_obtained
+        else "",
+        "overall_grade": get_grade(overall_percentage_obtained) or "",
+        "aggregates_schemas": broadsheet_schema["aggregates"],
+        "scores_schemas": scores_schemas,
+    }
+    return report_generation_data
+
+
 class FormFieldType(enum.StrEnum):
+    """Enumeration of form field types."""
+
     TEXT = "text"
     NUMBER = "number"
     DATE = "date"
 
 
 class FormFieldSchema(typing.TypedDict):
+    """Schema for kwargs used to create form fields."""
+
     label: str
     type: FormFieldType
     default: typing.Any
 
 
 FormFieldsSchema = typing.Dict[str, FormFieldSchema]
+"""Alias for the a collection of form field schemas."""
 
 
 def get_report_generation_form_fields_schema(
@@ -116,6 +122,16 @@ def get_report_generation_form_fields_schema(
     editable_variables: typing.List[str] = None,
     exclude_variables: typing.List[str] = None,
 ):
+    """
+    Generate a schema for the form fields required to build a
+    report generation form.
+
+    :param default_data: The default data to use for some/all the form fields.
+    :param variables: The variables to generate form fields for.
+    :param editable_variables: The variables that should be editable.
+    :param exclude_variables: The variables to exclude from the form fields.
+    :return: A schema for the form fields.
+    """
     editable_variables = editable_variables or []
     schema: FormFieldsSchema = {}
     for variable in variables:
@@ -141,6 +157,7 @@ def get_report_generation_form_fields_schema(
 
 
 def clean_report_generation_data(report_generation_data: typing.Dict[str, typing.Any]):
+    """Clean the report generation data gotten from the report generation form."""
     report_generation_data["behavioural_scores"] = {}
     for trait in BEHAVIOURAL_TRAITS:
         report_generation_data["behavioural_scores"][trait] = (
@@ -153,6 +170,13 @@ def clean_report_generation_data(report_generation_data: typing.Dict[str, typing
 def render_report_generation_form(
     student_result: StudentResult, broadsheet_schema: BroadSheetSchema
 ):
+    """
+    Render the form for requesting the required data to complete the report sheet generation.
+
+    :param student_result: The student result data.
+    :param broadsheet_schema: The schema of the broadsheet data from which the student result was extracted.
+    :return: None
+    """
     student_name = student_result["student"]
     report_generation_data = get_default_report_generation_data(
         student_result, broadsheet_schema
@@ -231,7 +255,7 @@ def render_report_generation_form(
                 """
             )
             return
-        
+
         st.info("Click download to save the generated report sheet.")
         cleaned_data = clean_report_generation_data(report_generation_data)
         html_report_sheet = PRIMARY_REPORT_TEMPLATE.render(**cleaned_data)
