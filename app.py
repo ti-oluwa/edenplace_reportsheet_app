@@ -1,3 +1,4 @@
+import enum
 import typing
 import logging
 import uuid
@@ -84,7 +85,7 @@ def add_overall_obtainable_score_to_subjects_scores_columns(
 
 
 def add_overall_obtainable_value_to_aggregates_columns(
-    columns, aggregates_schemas: AggregatesSchemas
+    columns: typing.Iterable[str], aggregates_schemas: AggregatesSchemas
 ) -> typing.List[str]:
     formatted_columns: typing.List[str] = []
     for column in columns:
@@ -100,7 +101,7 @@ def add_overall_obtainable_value_to_aggregates_columns(
     return formatted_columns
 
 
-def format_columns(columns) -> typing.List[str]:
+def format_columns(columns: typing.Iterable[str]) -> typing.List[str]:
     """
     Formats column names by replacing underscores with spaces and converting them to title case.
 
@@ -109,6 +110,20 @@ def format_columns(columns) -> typing.List[str]:
     :return: Formatted column names.
     """
     return [column.replace("_", " ").upper() for column in columns]
+
+
+def _format_enum_value(value: typing.Any) -> str:
+    """
+    Formats an enum value to a string.
+    If the value is an enum, it returns its name.
+    Otherwise, it returns the value as a string.
+
+    :param value (typing.Any): The value to format.
+    :return: The formatted value as a string.
+    """
+    if isinstance(value, enum.Enum):
+        return value.value
+    return value
 
 
 def subjects_scores_to_dataframe(
@@ -141,7 +156,9 @@ def subjects_scores_to_dataframe(
         )
     )
     subjects_scores_df.columns = format_columns(subjects_scores_df.columns)
-    subjects_scores_df = subjects_scores_df.style.format(precision=2, na_rep="nil")
+    subjects_scores_df = subjects_scores_df.style.format(
+        formatter=_format_enum_value, precision=2, na_rep="nil"
+    )
     return subjects_scores_df
 
 

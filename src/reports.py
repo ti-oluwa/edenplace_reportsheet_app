@@ -267,7 +267,7 @@ def render_report_generation_form(
 
     missing_fields = set()
     for key, value in report_generation_data.items():
-        if not value:
+        if value is None or value == "":
             missing_fields.add(key.replace("_", " ").title())
 
     submitted = st.session_state.get("report_generation_data_submitted", False)
