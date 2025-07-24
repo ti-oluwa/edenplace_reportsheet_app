@@ -1,3 +1,4 @@
+import typing
 import logging
 import uuid
 from contextlib import contextmanager
@@ -5,10 +6,11 @@ import tempfile
 from pathlib import Path
 
 import pandas as pd
+from pandas.io.formats.style import Styler
 import streamlit as st
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
-from sheet_utils import (
+from src.sheets import (
     BroadSheetSchema,
     SubjectSchema,
     SubjectsScores,
@@ -20,10 +22,10 @@ from sheet_utils import (
     get_grade,
     extract_broadsheets_data,
 )
-from report_generation import render_report_generation_form
+from src.reports import render_report_generation_form
 
 
-logger = logging.getLogger("edenplace-reportsheet")
+logger = logging.getLogger(__name__)
 st.set_page_config(
     page_title="EdenPlace Report Sheets Dashboard",
     layout="wide",
@@ -40,15 +42,18 @@ def get_temporary_path(uploaded_file: UploadedFile):
     :param uploaded_file (UploadedFile): The uploaded file to write to a temporary file.
     :return: Path to the temporary file.
     """
-    with tempfile.TemporaryDirectory(dir=Path.cwd()) as temp_dir:
-        temp_file_path = Path(temp_dir).resolve() / str(uploaded_file.name)
-
+    temp_dir = tempfile.TemporaryDirectory(dir=Path.cwd(), suffix=uuid.uuid4().hex)
+    temp_file_path = Path(temp_dir.name).resolve() / str(uploaded_file.name)
+    try:
         with open(temp_file_path, "wb") as temp_file:
             temp_file.write(uploaded_file.getbuffer())
-        yield temp_file_path
+            yield temp_file_path
+    finally:
+        temp_dir.cleanup()
+        logger.debug(f"Temporary file {temp_file_path} cleaned up.")
 
 
-def extract_broadsheets_file_data(broadsheets_file: UploadedFile):
+def extract_broadsheets_file_data(broadsheets_file: UploadedFile) -> BroadSheetsData:
     """
     Extracts broadsheets data from an uploaded file.
 
@@ -62,8 +67,8 @@ def extract_broadsheets_file_data(broadsheets_file: UploadedFile):
 
 def add_overall_obtainable_score_to_subjects_scores_columns(
     columns, subject_schema: SubjectSchema
-):
-    formatted_columns = []
+) -> typing.List[str]:
+    formatted_columns: typing.List[str] = []
     for column in columns:
         try:
             overall = subject_schema[column]["overall"]
@@ -80,13 +85,12 @@ def add_overall_obtainable_score_to_subjects_scores_columns(
 
 def add_overall_obtainable_value_to_aggregates_columns(
     columns, aggregates_schemas: AggregatesSchemas
-):
-    formatted_columns = []
+) -> typing.List[str]:
+    formatted_columns: typing.List[str] = []
     for column in columns:
-        try:
-            overall = aggregates_schemas[column]["overall"]
-        except KeyError:
-            overall = None
+        overall = aggregates_schemas[column].get("overall", None)
+        if overall is not None:
+            overall = round(overall, ndigits=2)
 
         if overall:
             formatted_columns.append(f"{column} ({overall})")
@@ -96,7 +100,7 @@ def add_overall_obtainable_value_to_aggregates_columns(
     return formatted_columns
 
 
-def format_columns(columns):
+def format_columns(columns) -> typing.List[str]:
     """
     Formats column names by replacing underscores with spaces and converting them to title case.
 
@@ -109,7 +113,7 @@ def format_columns(columns):
 
 def subjects_scores_to_dataframe(
     subjects_scores: SubjectsScores, subjects_schemas: SubjectsSchemas
-):
+) -> Styler:
     """
     Converts subjects scores to a pandas dataframe.
     Applying relevant formatting to the column headings
@@ -121,7 +125,7 @@ def subjects_scores_to_dataframe(
     subjects_scores_df = pd.DataFrame(subjects_scores)
     # The column headings in the dataframe are the subject names
     # Pick any one the subject names (column headings)
-    any_subject = subjects_scores_df.columns[0]
+    any_subject = str(subjects_scores_df.columns[0])
     # Fetch the subject's schema from the subjects section of the broadsheet schema
     any_subject_schema = subjects_schemas[any_subject]
 
@@ -143,7 +147,7 @@ def subjects_scores_to_dataframe(
 
 def aggregates_values_to_dataframe(
     aggregates_values: AggregatesValues, aggregates_schemas: AggregatesSchemas
-):
+) -> Styler:
     """
     Converts aggregates values to a pandas dataframe.
     Applying relevant formatting to the column headings
@@ -164,7 +168,7 @@ def aggregates_values_to_dataframe(
 
 def render_student_result_summary(
     student_result: StudentResult, broadsheet_schema: BroadSheetSchema
-):
+) -> None:
     """
     Renders a summary of a student's result in the app.
 
@@ -199,26 +203,28 @@ def render_student_result_summary(
     else:
         st.info("Aggregates data unavailable.")
 
-    try:
-        overall_percentage_obtainable = aggregates_schemas["sum total %"]["overall"]
-    except KeyError:
-        overall_percentage_obtainable = None
-    finally:
-        overall_percentage_obtained = aggregates_values.get("sum total %", None)
+    overall_percentage_obtainable = aggregates_schemas["sum total %"].get(
+        "overall", None
+    )
+    overall_percentage_obtained = aggregates_values.get("sum total %", None)
 
     col1, col2 = st.columns(2, gap="large")
     with col1:
         col1.write(
-            f"**Overall Percentage Obtainable:** {round(overall_percentage_obtainable, ndigits=1) if overall_percentage_obtainable else "Cannot evaluate"}%"
+            f"**Overall Percentage Obtainable:** {round(overall_percentage_obtainable, ndigits=1) if overall_percentage_obtainable else 'Cannot evaluate'}%"
         )
 
         col1.write(
-            f"**Overall Percentage Obtained:** {round(overall_percentage_obtained, ndigits=1) if overall_percentage_obtained else "Cannot evaluate"}%"
+            f"**Overall Percentage Obtained:** {round(overall_percentage_obtained, ndigits=1) if overall_percentage_obtained else 'Cannot evaluate'}%"
         )
 
     with col2:
-        overall_grade = get_grade(overall_percentage_obtained)
-        col2.write(f"**Overall Grade:** {overall_grade or "Cannot evaluate"}")
+        overall_grade = (
+            get_grade(overall_percentage_obtained)
+            if overall_percentage_obtained
+            else None
+        )
+        col2.write(f"**Overall Grade:** {overall_grade or 'Cannot evaluate'}")
 
     st.write("\n")
 
@@ -242,7 +248,7 @@ def render_student_result_summary(
     )
 
 
-def render_broadsheets_data(broadsheets_data: BroadSheetsData):
+def render_broadsheets_data(broadsheets_data: BroadSheetsData) -> None:
     """
     Renders broadsheets data on the app.
 
@@ -271,7 +277,7 @@ def render_broadsheets_data(broadsheets_data: BroadSheetsData):
                     render_student_result_summary(student_result, broadsheet_schema)
 
 
-def main():
+def main() -> None:
     """
     Main entry point for the app.
 
@@ -295,7 +301,7 @@ def main():
     try:
         broadsheets_data = extract_broadsheets_file_data(broadsheets_file)
     except Exception as exc:
-        logger.error(exc)
+        logger.exception(exc)
         st.error(
             "Error processing the uploaded file. Ensure that the file uploaded is of the expected type and format"
         )

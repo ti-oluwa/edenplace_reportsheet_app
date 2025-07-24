@@ -4,8 +4,17 @@ import typing
 import jinja2
 import jinja2.meta
 import streamlit as st
+from typing_extensions import TypedDict
 
-from sheet_utils import StudentResult, BroadSheetSchema, get_grade
+from src.sheets import (
+    StudentResult,
+    BroadSheetSchema,
+    SubjectSchema,
+    SubjectsScores,
+    AggregatesSchemas,
+    AggregatesValues,
+    get_grade,
+)
 
 
 def get_report_template(template_path: typing.Union[Path, str]) -> jinja2.Template:
@@ -70,33 +79,56 @@ BEHAVIOURAL_TRAITS = {
 }
 
 
+class ReportGenerationData(TypedDict):
+    """Schema for the data required to generate a report sheet."""
+
+    term: str
+    student_name: str
+    subjects_scores: SubjectsScores
+    aggregates_values: AggregatesValues
+    teachers_comment: typing.Optional[str]
+    coordinators_comment: typing.Optional[str]
+    overall_percentage_obtained: typing.Optional[float]
+    overall_grade: typing.Optional[str]
+    aggregates_schemas: AggregatesSchemas
+    scores_schemas: SubjectSchema
+    behavioural_scores: typing.Dict[str, str]
+
+
 @st.cache_data
 def get_default_report_generation_data(
     student_result: StudentResult, broadsheet_schema: BroadSheetSchema
-):
+) -> ReportGenerationData:
     subjects_schemas = broadsheet_schema["subjects"]
     first_subject = list(subjects_schemas.keys())[0]
     scores_schemas = subjects_schemas[first_subject]
     overall_percentage_obtained = student_result["aggregates"]["sum total %"]
 
-    report_generation_data = {
-        "term": student_result["term"] or "",
-        "student_name": student_result["student"],
-        "subjects_scores": student_result["subjects"],
-        "aggregates_values": student_result["aggregates"],
-        "teachers_comment": student_result["teachers_comment"],
-        "coordinators_comment": student_result["coordinators_comment"],
-        "overall_percentage_obtained": round(overall_percentage_obtained, ndigits=1)
-        if overall_percentage_obtained
-        else "",
-        "overall_grade": get_grade(overall_percentage_obtained) or "",
-        "aggregates_schemas": broadsheet_schema["aggregates"],
-        "scores_schemas": scores_schemas,
-    }
+    report_generation_data = ReportGenerationData(
+        {
+            "term": student_result["term"] or "",
+            "student_name": student_result["student"],
+            "subjects_scores": student_result["subjects"],
+            "aggregates_values": student_result["aggregates"],
+            "teachers_comment": student_result["teachers_comment"],
+            "coordinators_comment": student_result["coordinators_comment"],
+            "overall_percentage_obtained": round(overall_percentage_obtained, ndigits=1)
+            if overall_percentage_obtained
+            else None,
+            "overall_grade": get_grade(overall_percentage_obtained).value
+            if overall_percentage_obtained
+            else None,
+            "aggregates_schemas": broadsheet_schema["aggregates"],
+            "scores_schemas": scores_schemas,
+            "behavioural_scores": {
+                trait: "E" for trait in BEHAVIOURAL_TRAITS
+            },  # Default to 'E' for all traits
+        }
+    )
     return report_generation_data
 
 
-class FormFieldType(enum.StrEnum):
+class FormFieldType(str, enum.Enum):
     """Enumeration of form field types."""
 
     TEXT = "text"
@@ -104,7 +136,7 @@ class FormFieldType(enum.StrEnum):
     DATE = "date"
 
 
-class FormFieldSchema(typing.TypedDict):
+class FormFieldSchema(TypedDict):
     """Schema for kwargs used to create form fields."""
 
     label: str
@@ -117,11 +149,11 @@ FormFieldsSchema = typing.Dict[str, FormFieldSchema]
 
 
 def get_report_generation_form_fields_schema(
-    default_data: typing.Dict[str, typing.Any],
-    variables: typing.List[str],
-    editable_variables: typing.List[str] = None,
-    exclude_variables: typing.List[str] = None,
-):
+    default_data: ReportGenerationData,
+    variables: typing.Iterable[str],
+    editable_variables: typing.Optional[typing.Iterable[str]] = None,
+    exclude_variables: typing.Optional[typing.Iterable[str]] = None,
+) -> FormFieldsSchema:
     """
     Generate a schema for the form fields required to build a
     report generation form.
@@ -154,16 +186,6 @@ def get_report_generation_form_fields_schema(
         elif variable in DATE_TYPE_VARIABLES:
             schema[variable]["type"] = FormFieldType.DATE
     return schema
-
-
-def clean_report_generation_data(report_generation_data: typing.Dict[str, typing.Any]):
-    """Clean the report generation data gotten from the report generation form."""
-    report_generation_data["behavioural_scores"] = {}
-    for trait in BEHAVIOURAL_TRAITS:
-        report_generation_data["behavioural_scores"][trait] = (
-            report_generation_data.pop(trait)
-        )
-    return report_generation_data
 
 
 @st.dialog("Generate Report Sheet", width="large")
@@ -224,15 +246,15 @@ def render_report_generation_form(
         """
     )
     for trait in BEHAVIOURAL_TRAITS:
-        report_generation_data[trait] = st.selectbox(
+        report_generation_data["behavioural_scores"][trait] = st.selectbox(
             trait,
             options=["A", "B", "C", "E"],
-            help=f"Select grade for {trait}",
+            help=f"Select grade for {trait!r}",
         )
 
     st.button(
         "Generate",
-        help=f"Click to generate report sheet for {student_name}, then click download to save the report sheet.",
+        help=f"Click to generate report sheet for {student_name!r}, then click download to save the report sheet.",
         use_container_width=True,
         type="secondary",
         on_click=lambda: setattr(
@@ -248,21 +270,21 @@ def render_report_generation_form(
     submitted = st.session_state.get("report_generation_data_submitted", False)
     if submitted:
         if missing_fields:
+            missing = "\n- ".join(missing_fields)
             st.error(
                 f"""
                 All fields are required to generate the report sheet.
-                Please fill the following fields to generate the report sheet and try again;\n- {'\n- '.join(missing_fields)}
+                Please fill the following fields to generate the report sheet and try again;\n- {missing}
                 """
             )
             return
 
         st.info("Click download to save the generated report sheet.")
-        cleaned_data = clean_report_generation_data(report_generation_data)
-        html_report_sheet = PRIMARY_REPORT_TEMPLATE.render(**cleaned_data)
+        html_report_sheet = PRIMARY_REPORT_TEMPLATE.render(**report_generation_data)
         st.download_button(
             "Download Generated Sheet",
             data=html_report_sheet,
-            file_name=f"{cleaned_data['student_name']} Report Sheet.html",
+            file_name=f"{report_generation_data['student_name']} Report Sheet.html",
             mime="text/html",
             use_container_width=True,
         )
