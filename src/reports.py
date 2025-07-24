@@ -135,6 +135,9 @@ class FormFieldType(str, enum.Enum):
     NUMBER = "number"
     DATE = "date"
 
+    def __str__(self) -> str:
+        return self.value
+
 
 class FormFieldSchema(TypedDict):
     """Schema for kwargs used to create form fields."""

@@ -225,6 +225,9 @@ class Grade(str, enum.Enum):
     E = "E"
     F = "F"
 
+    def __str__(self) -> str:
+        return self.value
+
 
 def get_grade(score: Score) -> Grade:
     """Deduce the grade from an overall score."""
